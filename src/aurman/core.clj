@@ -1,8 +1,13 @@
 (ns aurman.core
   (:gen-class)
-  (:use aurman.api))
+  (:use aurman.api)
+  (:use [me.raynes/fs]))
 
 (def pkg-dir "/tmp")
+
+(defn save-file
+  [filename bytes]
+  (clojure.java.io/copy bytes (java.io.File. filename)))
 
 (defn results->ip-map 
   [results]
@@ -28,8 +33,11 @@
   [pkg]
   (do
     (println pkg)
-    (let  [[f bytes] (get-pkg pkg)]
-      (println f))))
+    (let [[f bytes] (get-pkg pkg)
+           filepath (str pkg-dir "/" f)]
+      (println filepath)
+      (save-file filepath bytes)
+      (fs/untar filepath pkg-dir))))
 
 (defn aur-search
   [query]

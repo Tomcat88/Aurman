@@ -38,7 +38,7 @@
          headers :headers} (http/get 
                             (->> pkg :URLPath (str aur-host)) 
                             {:as :stream})
-         [_ filename] (re-find #"filename=(.*)" (get headers "Content-Disposition"))]
+         [_ filename] (re-find #"filename=\"(.*)\""  (get headers "Content-Disposition"))]
     (if (= status 200)
       [filename body]))
 
