@@ -2,18 +2,34 @@
   (:gen-class)
   (:use aurman.api))
 
+(def pkg-dir "/tmp")
+
+(defn results->ip-map 
+  [results]
+  (reduce (fn [ret pkg]
+            (assoc ret (:PackageBaseID pkg) pkg))
+          {}
+          results))
 
 (defn pretty-print-search
   [results]
   (let [error? (= "error" (:type results))
         res (:results results)]
-    (if error?
-      (println res)
-      (loop [[{name :Name
-               desc :Description
-               id :PackageBaseID} & more] res]
-        (println id ":" name (str "(" desc ")"))
-        (if more (recur more))))))
+    (if-let [err (or (and error? res) (and (empty? res) "No package found!"))]
+      (println err)
+      (do (loop [[{name :Name
+                desc :Description
+                id :PackageBaseID} & more] res]
+         (println id ":" name (str "(" desc ")"))
+         (if more (recur more)))
+          res))))
+
+(defn install
+  [pkg]
+  (do
+    (println pkg)
+    (let  [[f bytes] (get-pkg pkg)]
+      (println f))))
 
 (defn aur-search
   [query]
@@ -23,7 +39,13 @@
   [idquery]
   (if (number? (read-string idquery))
     (println (get-info idquery))
-    (println (get-search idquery))))
+    (let [results (-> idquery aur-search results->ip-map)
+          id  (do (print "Enter the Package ID to install : ")
+                  (read-string (read-line)))]
+      (if (contains? results id)
+        (install (get results id))
+        (println "Package ID not found!"))
+      )))
 
 (defn -main
   "
