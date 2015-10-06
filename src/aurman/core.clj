@@ -1,7 +1,9 @@
 (ns aurman.core
   (:gen-class)
   (:use aurman.api)
-  (:use [me.raynes/fs]))
+  (:require [me.raynes.fs :as fs]
+            [me.raynes.fs.compression :as compr])
+  (:use [clojure.java.shell :only [sh]]))
 
 (def pkg-dir "/tmp")
 
@@ -29,15 +31,29 @@
          (if more (recur more)))
           res))))
 
+(defn extract
+  [filename filepath outdir]
+  (let [target (str outdir
+                    "/"
+                    (clojure.string/replace filename #"\.gz$" ""))]
+    (println "Extracting " filepath "into" target)
+    (compr/gunzip filepath target)
+    (println "Extracting " target "into" outdir)
+    (compr/untar target outdir)
+    (println "Deleting " target)
+    (fs/delete target)
+))
+
 (defn install
   [pkg]
   (do
     (println pkg)
     (let [[f bytes] (get-pkg pkg)
-           filepath (str pkg-dir "/" f)]
+           filepath (str pkg-dir "/" f)
+           target (clojure.string/replace filepath #"\.tar\.gz$" "/")]
       (println filepath)
       (save-file filepath bytes)
-      (fs/untar filepath pkg-dir))))
+      (extract f filepath pkg-dir))))
 
 (defn aur-search
   [query]
