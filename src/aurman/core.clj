@@ -3,7 +3,7 @@
   (:use aurman.api)
   (:require [me.raynes.fs :as fs]
             [me.raynes.fs.compression :as compr])
-  (:use [clojure.java.shell :only [sh]]))
+  (:use [clojure.java.shell :only [sh with-sh-dir]]))
 
 (def pkg-dir "/tmp")
 
@@ -35,25 +35,35 @@
   [filename filepath outdir]
   (let [target (str outdir
                     "/"
-                    (clojure.string/replace filename #"\.gz$" ""))]
+                    (clojure.string/replace filename #"\.gz$" ""))
+        makepkg-dir (clojure.string/replace target #"\.tar$" "")]
     (println "Extracting " filepath "into" target)
     (compr/gunzip filepath target)
     (println "Extracting " target "into" outdir)
     (compr/untar target outdir)
     (println "Deleting " target)
     (fs/delete target)
+   
 ))
 
 (defn install
   [pkg]
   (do
-    (println pkg)
+    ;(println pkg)
     (let [[f bytes] (get-pkg pkg)
            filepath (str pkg-dir "/" f)
            target (clojure.string/replace filepath #"\.tar\.gz$" "/")]
       (println filepath)
       (save-file filepath bytes)
-      (extract f filepath pkg-dir))))
+      (extract f filepath pkg-dir)
+      (let [{error :err 
+             out :out 
+             exit :exit} (sh 
+                          "makepkg" "--noconfirm" "-s" 
+                          :dir target)]
+        (if (= exit 1)
+          (println error)
+          (println out))))))
 
 (defn aur-search
   [query]
@@ -63,13 +73,15 @@
   [idquery]
   (if (number? (read-string idquery))
     (println (get-info idquery))
-    (let [results (-> idquery aur-search results->ip-map)
-          id  (do (print "Enter the Package ID to install : ")
-                  (read-string (read-line)))]
-      (if (contains? results id)
-        (install (get results id))
-        (println "Package ID not found!"))
-      )))
+    (let [results (-> idquery aur-search results->ip-map)]
+      (if (not-empty results)
+        (let [id  (do (print "Enter the Package ID to install : ")
+                      (flush)
+                      (read-string (read-line)))]
+          (if (contains? results id)
+            (install (get results id))
+            (println "Package ID not found!"))))
+       )))
 
 (defn -main
   "
