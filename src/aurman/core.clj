@@ -84,11 +84,15 @@
        )))
 
 (defn -main
+  "search query -> shows info for package that match the query
+install id -> install the package with that package id
+install query -> search for packages that match query and lets you decide which package to install 
   "
-  search query -> shows info for package that match the query
-  install id -> install the package with that package id
-  install query -> search for packages that match query and lets you decide which package to install 
-  "
+  ([] (-> -main
+          var
+          meta
+          :doc
+          println))
   ([arg] ; Default op is search if omitted
    (-main "search" arg))
   ([op arg & args]
