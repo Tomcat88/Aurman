@@ -36,28 +36,8 @@
   (let [{status :status
          body :body
          headers :headers} (http/get 
-                            (->> pkg :URLPath (str aur-host)) 
+                            (->> pkg :URLPath (str aur-host))
                             {:as :stream})
          [_ filename] (re-find #"filename=\"(.*)\""  (get headers "Content-Disposition"))]
     (if (= status 200)
-      [filename body]))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  )
+      [filename body])))
